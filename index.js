@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const io = require('socket.io');
+const socketIo = require('socket.io');
 
 const isDev = process.env.NODE_ENV !== 'production';
 const PORT = process.env.PORT || 5000;
@@ -15,13 +15,23 @@ app.get('*', function(request, response) {
 });
 
 const server = http.createServer(app);
-const webrtc = io(server);
+const io = socketIo(server);
 
-webrtc.set('origins', '*:*');
-webrtc.on('connection', socket => {
+io.set('origins', '*:*');
+let users = [];
+io.on('connection', socket => {
     socket.on('message', ({score, message, id}) => {
-      webrtc.emit('message', {score, message, id})
+      io.emit('message', {score, message, id})
     })
+
+    socket.on('addUser', ({ user, id }) => {
+      users.push({ id, user }); 
+      socket.emit('users', users);
+    })
+
+    socket.on('disconnect', () => {
+      users.splice(users.indexOf(socket), 1);
+  });
 })
 
 // Priority serve any static files.

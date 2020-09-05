@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import io from 'socket.io-client'
+import Backdrop from '@material-ui/core/Backdrop';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { makeStyles } from '@material-ui/core/styles';
+
 import { shuffle, transpose } from './helpers.js'
 import Tile from './Tile.js';
 
-let socket = io.connect('http://localhost:5000');
-if(process.env.NODE_ENV === 'production') { socket = 
-    io.connect('https://bingo-game-react.herokuapp.com/') 
-  }
+const useStyles = makeStyles((theme) => ({
+    backdrop: {
+      zIndex: theme.zIndex.drawer + 1,
+      color: '#fff',
+    },
+  }));
 
-const TileGrid = ({ reset, width, userColor }) => {
+const TileGrid = ({ reset, width, userColor, socket}) => {
     const [schema, setSchema] = useState([]);
     const [score, setScore] = useState(0);
+    const [open, setOpen] = useState(false);
+    const classes = useStyles();
+
 
     useEffect(() => {
         socket.on('message', ({score, message, id}) => {
@@ -22,6 +30,7 @@ const TileGrid = ({ reset, width, userColor }) => {
                     }
                 }));
                 setSchema(newSchema);
+                setOpen(false);
             }
         })
     });
@@ -40,7 +49,8 @@ const TileGrid = ({ reset, width, userColor }) => {
         const newSchema = [...schema];
         newSchema[row][column].selected = true;
         setSchema(newSchema);
-        socket.emit('message', {score, message: newSchema[row][column].value, id: socket.id})
+        socket.emit('message', {score, message: newSchema[row][column].value, id: socket.id});
+        setOpen(true);
     };
 
     useEffect(() => {
@@ -87,6 +97,9 @@ const TileGrid = ({ reset, width, userColor }) => {
 
     return (
         <>
+            <Backdrop className={classes.backdrop} open={open}>
+                <CircularProgress color="inherit" />
+            </Backdrop>
             {score >= 5 && <p className="tileGrid__win">You WIN!</p>}
             <div className="tileGrid">
                 {[...Array(width)].map((x, i) => renderTile(i))}
