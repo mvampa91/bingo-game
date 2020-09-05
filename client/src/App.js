@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client'
 import './App.css';
 import TileGrid from './TileGrid';
-import Button from './Button';
 import Room from './Room';
+import Button from '@material-ui/core/Button';
 
 let socket = io.connect('http://localhost:5000');
 if(process.env.NODE_ENV === 'production') {
@@ -21,12 +21,19 @@ function App() {
     })
   }, []);
 
+  const handleNewGame = () => {
+    setReset(!reset);
+  };
+
   return (
     // BEM
     <div className="app">
       {/* <ColorPicker setColor={setColor} /> */}
       {room ?
-        <TileGrid width={5} reset={reset} socket={socket}/> :
+        (<>
+          <TileGrid width={5} reset={reset} socket={socket}/>
+          <Button color="primary" className="button__button" onClick={handleNewGame}>New Game</Button>
+        </>) :
         <Room socket={socket} userList={userList} setRoom={setRoom} />
     }
     </div>

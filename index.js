@@ -20,13 +20,15 @@ const io = socketIo(server);
 io.set('origins', '*:*');
 let users = [];
 io.on('connection', socket => {
+    socket.join('game');
+
     socket.on('message', ({score, message, id}) => {
       io.emit('message', {score, message, id})
     })
 
     socket.on('addUser', ({ user, id }) => {
       users.push({ id, user }); 
-      socket.emit('users', users);
+      socket.in('game').emit('users', users);
     })
 
     socket.on('disconnect', () => {

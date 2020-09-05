@@ -16,14 +16,17 @@ import FormLabel from '@material-ui/core/FormLabel';
 const Room = ({ socket, userList, setRoom }) => {
     const [open, setOpen] = useState(true);
     const [userName, setUsername] = useState('');
-    const [palyer, setPalyer] = useState(null);
+    const [player, setPlayer] = useState(null);
     
     const handleClose = () => {
         setOpen(false);
         socket.emit('addUser', { user: userName, id: socket.id });
     };
-    
 
+    const handlePlay = () => {
+        setRoom([socket, player])
+    }
+    
     return (
         <div className="room">
             {userName && !open && <h1>Welcome {userName}!</h1>}
@@ -48,11 +51,11 @@ const Room = ({ socket, userList, setRoom }) => {
             </Dialog>
             <FormControl component="fieldset">
             <FormLabel component="legend">Online players</FormLabel>
-                <RadioGroup aria-label="gender" name="gender1" value={palyer} onChange={(e) => setPalyer(e.target.value) }>
+                <RadioGroup aria-label="gender" name="gender1" value={player} onChange={(e) => setPlayer(e.target.value) }>
                     {userList.filter(i => i.id !== socket.id ).map(u => <FormControlLabel value={u.id} control={<Radio />} key={`${u.id}`} label={u.user}/>)}
                 </RadioGroup>
             </FormControl>
-            {palyer && <Button color="primary" className="button__button" onChange={() => {}}>Play</Button>}
+            {player && <Button color="primary" className="button__button" onClick={handlePlay}>Play</Button>}
         </div>
     )
 }
