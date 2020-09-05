@@ -1,0 +1,26 @@
+{
+  "name": "bingo-game",
+  "version": "1.0.0",
+  "description": "A bingo game node + react",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "cd client/ && npm install && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mvampa91/bingo-game.git"
+  },
+  "author": "Marco Vampa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mvampa91/bingo-game/issues"
+  },
+  "homepage": "https://github.com/mvampa91/bingo-game#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodemon": "^2.0.4",
+    "socket.io": "^2.3.0"
+  }
+}
