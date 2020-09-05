@@ -1,10 +1,30 @@
 import React, { useEffect, useState } from 'react'
+import io from 'socket.io-client'
 import { shuffle, transpose } from './helpers.js'
 import Tile from './Tile.js';
+
+let socket = io.connect('http://localhost:5000');
+if(process.env.NODE_ENV === 'production') { socket = 
+    io(`https://bingo-game-react.herokuapp.com:${process.env.PORT || 5000}`) 
+  }
 
 const TileGrid = ({ reset, width, userColor }) => {
     const [schema, setSchema] = useState([]);
     const [score, setScore] = useState(0);
+
+    useEffect(() => {
+        socket.on('message', ({score, message, id}) => {
+            if (id !== socket.id) {
+                const newSchema = [...schema];
+                newSchema.forEach((x, i) => x.forEach((y, j) => {
+                    if (newSchema[i][j].value === message) {
+                        newSchema[i][j].selected = true;
+                    }
+                }));
+                setSchema(newSchema);
+            }
+        })
+    });
 
     useEffect(() => {
         const array = [...Array(width * width)].map((x, i) => ({ value: i + 1, selected: false }));
@@ -20,6 +40,7 @@ const TileGrid = ({ reset, width, userColor }) => {
         const newSchema = [...schema];
         newSchema[row][column].selected = true;
         setSchema(newSchema);
+        socket.emit('message', {score, message: newSchema[row][column].value, id: socket.id})
     };
 
     useEffect(() => {
@@ -56,6 +77,7 @@ const TileGrid = ({ reset, width, userColor }) => {
             reset={reset}
             color={userColor}
             value={j.value}
+            selected={j.selected}
             row={row}
             column={i}
             onSelected={onSelected}
