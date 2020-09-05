@@ -5,7 +5,7 @@ import Tile from './Tile.js';
 
 let socket = io.connect('http://localhost:5000');
 if(process.env.NODE_ENV === 'production') { socket = 
-    io.connet('https://bingo-game-react.herokuapp.com/') 
+    io.connect('https://bingo-game-react.herokuapp.com/') 
   }
 
 const TileGrid = ({ reset, width, userColor }) => {
