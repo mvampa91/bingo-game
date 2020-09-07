@@ -42,7 +42,7 @@ io.on('connection', socket => {
 
     socket.on('playRequestConfirm', ({ to }) => {
       console.log('play request accepted to', to);
-      io.to(to).emit('confirm', socket.id);
+      io.to(to).emit('accepted', socket.id);
       socket.join(`${to}_vs_${socket.id}`)
     });
 
