@@ -17,9 +17,9 @@ function App() {
 
   useEffect(() => {
     socket.on('users', (users) => {
-      setUserList(users)
-    })
-  }, []);
+      setUserList(users);
+    });
+  });
 
   const handleNewGame = () => {
     setReset(!reset);
@@ -31,7 +31,7 @@ function App() {
       {/* <ColorPicker setColor={setColor} /> */}
       {room ?
         (<>
-          <TileGrid width={5} reset={reset} socket={socket}/>
+          <TileGrid width={5} reset={reset} socket={socket} room={room} />
           <Button color="primary" className="button__button" onClick={handleNewGame}>New Game</Button>
         </>) :
         <Room socket={socket} userList={userList} setRoom={setRoom} />

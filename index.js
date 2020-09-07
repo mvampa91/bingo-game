@@ -17,22 +17,45 @@ app.get('*', function(request, response) {
 const server = http.createServer(app);
 const io = socketIo(server);
 
-io.set('origins', '*:*');
 let users = [];
 io.on('connection', socket => {
-    socket.join('game');
-
     socket.on('message', ({score, message, id}) => {
       io.emit('message', {score, message, id})
     })
 
-    socket.on('addUser', ({ user, id }) => {
-      users.push({ id, user }); 
-      socket.in('game').emit('users', users);
+    socket.on('addUser', (user) => {
+      socket.join('game');
+      socket.nickname = user;
+      console.log(socket.nickname, `(${socket.id})`, 'has connected to \'game\'!');
+      users.push({ id: socket.id, nickname: socket.nickname });
+      io.in('game').emit('users', users);
     })
 
+    socket.on('playRequest', ({ from, to, id }) => {
+      console.log('play request sent from', from, 'to', to);
+      io.to(to).emit('play', { message: `Player '${from}' wants to play with you. Join game?`, from, id });
+    })
+
+    socket.on('playRequestDeny', () => {
+
+    });
+
+    socket.on('playRequestConfirm', ({ to }) => {
+      console.log('play request accepted to', to);
+      io.to(to).emit('confirm', socket.id);
+      socket.join(`${to}_vs_${socket.id}`)
+    });
+
+    socket.on('joinRoom', (from) => {
+      socket.join(`${socket.id}_vs_${from}`);
+    });
+
     socket.on('disconnect', () => {
-      users.splice(users.indexOf(socket), 1);
+      if (socket.nickname) {
+        users = users.filter(u => u.id !== socket.id);
+        console.log(socket.nickname, `(${socket.id})`, 'has disconnected from \'game\'!', 'Users left:', users);
+        io.in('game').emit('users', users);
+      }
   });
 })
 
