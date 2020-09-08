@@ -19,12 +19,18 @@ const io = socketIo(server);
 
 let users = [];
 io.on('connection', socket => {
-    socket.on('move', ({score, message, id, room, schema}) => {
+    socket.on('move', ({ message, id, room }) => {
       const players = room.split('_vs_');
       const sender = players.find(i => i === id);
       const receiver = players.find(i => i !== id);
-      io.to(receiver).emit('sendmove', { score, message, id });
-      console.log(message, 'from:', sender, 'to:', receiver, 'score:', score, 'room:', room);
+      io.to(receiver).emit('sendmove', { message, id });
+      console.log(message, 'from:', users.find(u => u.id === sender).nickname, 'to:', users.find(u => u.id === receiver).nickname);
+    })
+    socket.on('score', ({ score, id, room }) => {
+      const players = room.split('_vs_');
+      const receiver = players.find(i => i !== id);
+      io.to(receiver).emit('sendscore', { score, id });
+      console.log(score, users.find(u => u.id === id).nickname);
     })
 
     socket.on('addUser', (user) => {

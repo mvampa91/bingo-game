@@ -20,15 +20,21 @@ const useStyles = makeStyles((theme) => ({
 const TileGrid = ({ width, userColor, socket, room}) => {
     const [schema, setSchema] = useState([]);
     const [score, setScore] = useState(0);
+    const [scores, setScores] = useState({ [socket.id]: 0 });
     const [open, setOpen] = useState(false);
     const [reset, setReset] = useState(false);
     const [moves, setMoves] = useState([]);
+    const [win, setWin] = useState(false);
+    const [lost, setLost] = useState(false);
     const classes = useStyles();
 
     useEffect(() => {
-        socket.on('sendmove', ({score, message, id}) => {
-            setMoves((oldMooves) => [...oldMooves, { score, id, message }]);
-        })
+        socket.on('sendmove', ({ message, id }) => {
+            setMoves((oldMooves) => [...oldMooves, { id, message }]);
+        });
+        socket.on('sendscore', ({ score: scr, id }) => {
+            setScores((oldScores) => ({ ...oldScores, [id]: scr }));
+        });
     }, [room, socket]);
 
     useEffect(() => {
@@ -45,6 +51,21 @@ const TileGrid = ({ width, userColor, socket, room}) => {
             setOpen(false);
         }
     }, [moves, socket.id]);
+
+    useEffect(() => {
+        const players = room.split('_vs_');
+        const p1 = players.find(p => p === socket.id);
+        const p2 = players.find(p => p !== socket.id);
+        const p1score = scores[p1];
+        const p2score = scores[p2];
+
+        if (p1score >= 5 && p2score < 5) setWin(true);
+        if (p1score < 5 && p2score >= 5) setLost(true);
+        if (p1score >= 5 && p2score >= 5) {
+            if (p1score > p2score) setWin(true);
+            if (p1score < p2score) setLost(true);
+        }
+    }, [scores]);
 
     useEffect(() => {
         const array = [...Array(width * width)].map((x, i) => ({ value: i + 1, selected: false }));
@@ -81,14 +102,25 @@ const TileGrid = ({ width, userColor, socket, room}) => {
             }
         })
         setScore(newScore);
+        setScores((oldScores) => ({ ...oldScores, [socket.id]: newScore }))
+        socket.emit('score', { score: newScore, id: socket.id, room });
     }, [schema])
 
     const onSelected = (row, column) => {
         const newSchema = [...schema];
         newSchema[row][column].selected = true;
         setSchema(newSchema);
-        socket.emit('move', {score, message: newSchema[row][column].value, id: socket.id, room});
+        socket.emit('move', { message: schema[row][column].value, id: socket.id, room});
         setOpen(true);
+    };
+
+    const handleNewGame = () => {
+        setReset(!reset);
+        setOpen(false);
+        setLost(false);
+        setWin(false);
+        setScore(0);
+        setScores({ [socket.id]: 0 } );
     };
 
     const renderTile = (row) => {
@@ -111,10 +143,10 @@ const TileGrid = ({ width, userColor, socket, room}) => {
             <Backdrop className={classes.backdrop} open={open}>
                 <CircularProgress color="inherit" />
             </Backdrop>
-            <Dialog open={score >= 5} onClose={() => {}} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">You win!</DialogTitle>
+            <Dialog open={win || lost} onClose={() => {}} aria-labelledby="form-dialog-title">
+                <DialogTitle id="form-dialog-title">{win ? 'You win!' : ''}{lost ? 'You Lost!' : ''}</DialogTitle>
                 <DialogActions>
-                    <Button onClick={() => setReset(!reset)} color="primary">
+                    <Button onClick={handleNewGame} color="primary">
                         New Game
                     </Button>
                 </DialogActions>
