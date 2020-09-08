@@ -16,10 +16,10 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
     backdrop: {
-      zIndex: theme.zIndex.drawer + 1,
-      color: '#fff',
+        zIndex: theme.zIndex.drawer + 1,
+        color: '#fff',
     },
-  }));
+}));
 
 const Room = ({ socket, userList, setRoom }) => {
     const [open, setOpen] = useState(true);
@@ -28,22 +28,26 @@ const Room = ({ socket, userList, setRoom }) => {
     const [message, setMessage] = useState('');
 
     const [waiting, setWaiting] = useState(false);
-    
+
     const classes = useStyles();
 
-    const noPlayers = userList.filter(i => i.id !== socket.id ).length < 1;
+    const noPlayers = userList.filter(i => i.id !== socket.id).length < 1;
 
     useEffect(() => {
         socket.on('play', (message) => {
             setMessage(message);
-          });
+        });
         socket.on('accepted', (from) => {
             setWaiting(false);
-            setRoom({ p1: socket.id, p2: from });
+            setRoom(`${socket.id}_vs_${from}`);
             socket.emit('joinRoom', from);
         });
-    })
-    
+        socket.on('denied', (message) => {
+            setMessage({ message });
+            setWaiting(false);
+        });
+    }, [setRoom, socket]);
+
     const handleClose = () => {
         setOpen(false);
         socket.emit('addUser', userName);
@@ -51,22 +55,20 @@ const Room = ({ socket, userList, setRoom }) => {
 
     const handlePlay = () => {
         setWaiting(true);
-        socket.emit('playRequest', { from: userName, id: socket.id, to: player  })
+        socket.emit('playRequest', { from: userName, id: socket.id, to: player })
     }
 
     const handlePlayCancel = () => {
-        console.log('denied');
-        setOpen(false);
-        socket.emit('playRequestDeny', { to: message.from })
+        setMessage(false);
+        socket.emit('playRequestDeny', { to: message.id })
     }
 
     const handlePlayJoin = () => {
-        console.log('joined');
-        setRoom({ p1: message.id, p2: socket.id });
+        setMessage(false);
+        setRoom(`${message.id}_vs_${socket.id}`);
         socket.emit('playRequestConfirm', { to: message.id })
-        socket.emit('joinRoom', { p1: message.id, p2: socket.id })
     }
-    
+
     return (
         <div className="room">
             <Backdrop className={classes.backdrop} open={waiting}>
@@ -76,38 +78,42 @@ const Room = ({ socket, userList, setRoom }) => {
             <Dialog open={open} onClose={() => {}} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">Type a username</DialogTitle>
                 <DialogContent>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="Username"
-                    type="text"
-                    fullWidth
-                    onChange={(e) => setUsername(e.target.value)}
-                />
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Username"
+                        type="text"
+                        fullWidth
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
                 </DialogContent>
                 <DialogActions>
-                <Button onClick={handleClose} color="primary">
-                    Join
+                    <Button onClick={handleClose} color="primary">
+                        Join
                 </Button>
                 </DialogActions>
             </Dialog>
             <Dialog open={!!message.message} onClose={() => {}} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">{message.message}</DialogTitle>
-                <DialogActions>
-                <Button onClick={handlePlayCancel} color="primary">
-                    Cancel
+                {message.from ? <DialogActions>
+                    <Button onClick={handlePlayCancel} color="primary">
+                        Cancel
                 </Button>
-                <Button onClick={handlePlayJoin} color="primary">
-                    Join
+                    <Button onClick={handlePlayJoin} color="primary">
+                        Join
                 </Button>
-                </DialogActions>
+                </DialogActions> : <DialogActions>
+                    <Button onClick={() => setMessage({})} color="primary">
+                        Close
+                    </Button>
+                </DialogActions>}
             </Dialog>
             <FormControl component="fieldset">
-            <FormLabel component="legend">Online players</FormLabel>
-                <RadioGroup aria-label="gender" name="gender1" value={player} onChange={(e) => setPlayer(e.target.value) }>
+                <FormLabel component="legend">Online players</FormLabel>
+                <RadioGroup aria-label="gender" name="gender1" value={player} onChange={(e) => setPlayer(e.target.value)}>
                     {noPlayers && <h6 style={{ marginTop: '1em' }}>No players online...</h6>}
-                    {userList.filter(i => i.id !== socket.id ).map(u => <FormControlLabel value={u.id} control={<Radio />} key={`${u.id}`} label={u.nickname}/>)}
+                    {userList.filter(i => i.id !== socket.id).map(u => <FormControlLabel value={u.id} control={<Radio />} key={`${u.id}`} label={u.nickname} />)}
                 </RadioGroup>
             </FormControl>
             {player && <Button color="primary" className="button__button" onClick={handlePlay}>Play</Button>}

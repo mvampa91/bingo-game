@@ -19,8 +19,12 @@ const io = socketIo(server);
 
 let users = [];
 io.on('connection', socket => {
-    socket.on('message', ({score, message, id}) => {
-      io.emit('message', {score, message, id})
+    socket.on('move', ({score, message, id, room, schema}) => {
+      const players = room.split('_vs_');
+      const sender = players.find(i => i === id);
+      const receiver = players.find(i => i !== id);
+      io.to(receiver).emit('sendmove', { score, message, id });
+      console.log(message, 'from:', sender, 'to:', receiver, 'score:', score, 'room:', room);
     })
 
     socket.on('addUser', (user) => {
@@ -36,18 +40,21 @@ io.on('connection', socket => {
       io.to(to).emit('play', { message: `Player '${from}' wants to play with you. Join game?`, from, id });
     })
 
-    socket.on('playRequestDeny', () => {
-
+    socket.on('playRequestDeny', ({ to }) => {
+      console.log('play request denied from', socket.id);
+      io.to(to).emit('denied', 'The player denied your invite');
     });
 
     socket.on('playRequestConfirm', ({ to }) => {
       console.log('play request accepted to', to);
       io.to(to).emit('accepted', socket.id);
-      socket.join(`${to}_vs_${socket.id}`)
+      socket.join(`${to}_vs_${socket.id}`);
+      console.log(socket.id, 'joined', `${to}_vs_${socket.id}`, 'room!');
     });
 
     socket.on('joinRoom', (from) => {
       socket.join(`${socket.id}_vs_${from}`);
+      console.log(socket.id, 'joined', `${socket.id}_vs_${from}`, 'room!');
     });
 
     socket.on('disconnect', () => {
