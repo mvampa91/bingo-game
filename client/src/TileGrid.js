@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import Backdrop from '@material-ui/core/Backdrop';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Dialog from '@material-ui/core/Dialog';
@@ -31,7 +31,8 @@ const TileGrid = ({ width, userColor, socket, room}) => {
         })
     }, [room, socket]);
 
-    const updateSchema = useCallback((move) => {
+    useEffect(() => {
+        const move = moves[moves.length -1] || {};
         const { message, id } = move;
         if (id !== socket.id) {
             const newSchema = [...schema];
@@ -43,14 +44,7 @@ const TileGrid = ({ width, userColor, socket, room}) => {
             setSchema(newSchema);
             setOpen(false);
         }
-    }, [socket.id]);
-
-    useEffect(() => {
-        const move = moves[moves.length -1] || {};
-        if (move.message) {
-            updateSchema(move);
-        }
-    }, [moves, updateSchema]);
+    }, [moves, socket.id]);
 
     useEffect(() => {
         const array = [...Array(width * width)].map((x, i) => ({ value: i + 1, selected: false }));
@@ -93,7 +87,7 @@ const TileGrid = ({ width, userColor, socket, room}) => {
         const newSchema = [...schema];
         newSchema[row][column].selected = true;
         setSchema(newSchema);
-        socket.emit('move', { score, message: newSchema[row][column].value, id: socket.id, room });
+        socket.emit('move', {score, message: newSchema[row][column].value, id: socket.id, room});
         setOpen(true);
     };
 
@@ -120,7 +114,7 @@ const TileGrid = ({ width, userColor, socket, room}) => {
             <Dialog open={score >= 5} onClose={() => {}} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">You win!</DialogTitle>
                 <DialogActions>
-                    <Button onClick={() => setReset(true)} color="primary">
+                    <Button onClick={() => setReset(!reset)} color="primary">
                         New Game
                     </Button>
                 </DialogActions>
